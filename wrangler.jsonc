@@ -1,0 +1,12 @@
+// wrangler.jsonc for gr8r-grafana-worker
+{
+  "name": "gr8r-grafana-worker",
+  "main": "index.js",
+  "compatibility_date": "2025-06-12",
+  "routes": [
+    { "pattern": "api.gr8r.com/api/grafana", "zone_name": "gr8r.com" }
+  ],
+  "vars": {
+    // These are optional defaults and can be overridden in Secrets
+  }
+}
