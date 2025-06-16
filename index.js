@@ -1,9 +1,10 @@
-// v1.0.0 gr8r-grafana-worker: centralized logging for Loki
+// v1.0.1 gr8r-grafana-worker: centralized logging for Loki
+// - updating line 7 to api/grafana - replacing logger
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (request.method !== "POST" || url.pathname !== "/api/logger") {
+    if (request.method !== "POST" || url.pathname !== "/api/grafana") {
       return new Response("Not found", { status: 404 });
     }
 
