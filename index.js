@@ -1,7 +1,7 @@
-// v1.0.4 gr8r-grafana-worker: ensures consistent log labels for visibility in Loki
-//ADDED fallback enforcement for meta.source and meta.service, replacing empty or missing values with "unspecified" and "unknown_service" respectively.
-//UPDATED label assignment logic to prevent invisible logs due to empty labels.
-//MAINTAINED existing structure, error handling, and log streaming format.
+// v1.0.5 gr8r-grafana-worker: improves default label naming for fallback visibility in queries
+//CHANGED fallback `source` label from "unspecified" → "gr8r-fallback"
+//CHANGED fallback `service_name` label from "unknown_service" → "gr8r-unknown"
+//IMPROVES filtering in Grafana queries via consistent namespace-friendly default labels
 
 export default {
   async fetch(request, env) {
@@ -13,9 +13,9 @@ export default {
       const body = await request.json();
       const { level = "info", message = "No message provided", meta = {} } = body;
 
-      // Ensure required labels are always present and valid
-      const source = (typeof meta.source === "string" && meta.source.trim()) ? meta.source : "unspecified";
-      const service = (typeof meta.service === "string" && meta.service.trim()) ? meta.service : "unknown_service";
+      // Improved fallback label values
+      const source = (typeof meta.source === "string" && meta.source.trim()) ? meta.source : "gr8r-fallback";
+      const service = (typeof meta.service === "string" && meta.service.trim()) ? meta.service : "gr8r-unknown";
 
       const timestamp = Date.now() * 1_000_000; // nanoseconds
 
@@ -63,4 +63,3 @@ export default {
     }
   }
 }
-
