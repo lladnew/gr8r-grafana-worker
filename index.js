@@ -1,53 +1,51 @@
-// v1.0.1 gr8r-grafana-worker: centralized logging for Loki
-// - updating line 7 to api/grafana - replacing logger
+// v1.0.2 gr8r-grafana-worker: fixed timestamp and live base64 auth
 export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    if (request.method !== "POST" || url.pathname !== "/api/grafana") {
-      return new Response("Not found", { status: 404 });
+  async fetch(request, env) {
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
     }
 
     try {
-      const { level = "info", message, labels = {} } = await request.json();
+      const body = await request.json();
+      const { level = "info", message = "No message provided", meta = {} } = body;
 
-      if (!message) {
-        return new Response("Missing 'message' field", { status: 400 });
-      }
+      const timestamp = Date.now() * 1_000_000; // current time in nanoseconds
 
-      const timestampNs = Date.now() * 1e6; // Convert ms to ns
-      const streamLabels = Object.entries({ level, ...labels })
-        .map(([k, v]) => `${k}="${v}"`)
-        .join(",");
-
-      const lokiPayload = {
-        streams: [
-          {
-            stream: { level, ...labels },
-            values: [[`${timestampNs}`, message]]
-          }
-        ]
+      const stream = {
+        stream: {
+          level,
+          source: meta.source || "unknown",
+          service_name: meta.service || "unknown_service"
+        },
+        values: [[`${timestamp}`, message]]
       };
 
-      const lokiResponse = await fetch(`${env.GRAFANA_LOKI_URL}/loki/api/v1/push`, {
+      const lokiUrl = env.GRAFANA_LOKI_URL;
+      const username = env.GRAFANA_USERNAME;
+      const apiKey = env.GRAFANA_API_KEY;
+      const authHeader = 'Basic ' + btoa(`${username}:${apiKey}`);
+
+      const response = await fetch(`${lokiUrl}/loki/api/v1/push`, {
         method: "POST",
         headers: {
-          Authorization: `Basic ${btoa(`${env.GRAFANA_USERNAME}:${env.GRAFANA_API_KEY}`)}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": authHeader
         },
-        body: JSON.stringify(lokiPayload)
+        body: JSON.stringify({ streams: [stream] })
       });
 
-      if (!lokiResponse.ok) {
-        const errorText = await lokiResponse.text();
-        return new Response(`Loki error: ${errorText}`, { status: 502 });
+      const responseBody = await response.text();
+
+      if (!response.ok) {
+        return new Response(`Loki error: ${responseBody}`, { status: 500 });
       }
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" }
+      return new Response("Log pushed to Grafana Loki successfully", {
+        headers: { "Content-Type": "text/plain" }
       });
     } catch (err) {
       return new Response(`Unexpected error: ${err.message}`, { status: 500 });
     }
   }
-};
+}
+
