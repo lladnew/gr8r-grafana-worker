@@ -1,7 +1,7 @@
-// v1.0.5 gr8r-grafana-worker: improves default label naming for fallback visibility in queries
-//CHANGED fallback `source` label from "unspecified" → "gr8r-fallback"
-//CHANGED fallback `service_name` label from "unknown_service" → "gr8r-unknown"
-//IMPROVES filtering in Grafana queries via consistent namespace-friendly default labels
+// v1.0.6 gr8r-grafana-worker: adds visible diagnostics for log success/failure
+//ADDED verbose `console.log` output for successful push payload and Loki response
+//ADDED fallback console.error with raw payload if logging fails
+//RETAINED consistent fallback label structure from v1.0.5
 
 export default {
   async fetch(request, env) {
@@ -13,7 +13,6 @@ export default {
       const body = await request.json();
       const { level = "info", message = "No message provided", meta = {} } = body;
 
-      // Improved fallback label values
       const source = (typeof meta.source === "string" && meta.source.trim()) ? meta.source : "gr8r-fallback";
       const service = (typeof meta.service === "string" && meta.service.trim()) ? meta.service : "gr8r-unknown";
 
@@ -51,6 +50,7 @@ export default {
       console.log("📨 Loki Response Body:", responseText);
 
       if (!response.ok) {
+        console.error("❌ Loki push failed:", response.status, responseText);
         return new Response(`Loki error: ${responseText}`, { status: 500 });
       }
 
