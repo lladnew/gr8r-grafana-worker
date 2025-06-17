@@ -1,12 +1,13 @@
-// v1.0.7 gr8r-grafana-worker: adds visible diagnostics for log success/failure
-//ADDED verbose `console.log` output for successful push payload and Loki response
-//ADDED fallback console.error with raw payload if logging fails
-//RETAINED consistent fallback label structure from v1.0.5
-// added line 8 console.log("📥 Incoming request to Grafana Worker");
+// v1.0.8 gr8r-grafana-worker: compatible with service bindings + retains diagnostics
+//ADDED support for internal Worker-to-Worker calls via service bindings
+//RETAINED route support for direct HTTP POSTs (api.gr8r.com/api/grafana)
+//RETAINED verbose logging for incoming requests and Loki response
+//MAINTAINED fallback source/service label defaults for Grafana visibility
 
 export default {
   async fetch(request, env) {
     console.log("📥 Incoming request to Grafana Worker");
+
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
@@ -18,7 +19,7 @@ export default {
       const source = (typeof meta.source === "string" && meta.source.trim()) ? meta.source : "gr8r-fallback";
       const service = (typeof meta.service === "string" && meta.service.trim()) ? meta.service : "gr8r-unknown";
 
-      const timestamp = Date.now() * 1_000_000; // nanoseconds
+      const timestamp = Date.now() * 1_000_000; // nanoseconds for Loki
 
       const stream = {
         stream: {
