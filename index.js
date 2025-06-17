@@ -1,10 +1,12 @@
-// v1.0.6 gr8r-grafana-worker: adds visible diagnostics for log success/failure
+// v1.0.7 gr8r-grafana-worker: adds visible diagnostics for log success/failure
 //ADDED verbose `console.log` output for successful push payload and Loki response
 //ADDED fallback console.error with raw payload if logging fails
 //RETAINED consistent fallback label structure from v1.0.5
+// added line 8 console.log("📥 Incoming request to Grafana Worker");
 
 export default {
   async fetch(request, env) {
+    console.log("📥 Incoming request to Grafana Worker");
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
