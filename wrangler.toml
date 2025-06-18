@@ -1,0 +1,7 @@
+name = "gr8r-grafana-worker"
+main = "index.js"
+compatibility_date = "2025-06-12"
+
+[[routes]]
+pattern = "api.gr8r.com/api/grafana"
+zone_name = "gr8r.com"
