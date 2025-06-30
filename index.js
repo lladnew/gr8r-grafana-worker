@@ -1,3 +1,7 @@
+// v1.0.9 gr8r-grafana-worker
+// - ADDED: Flattens top-level primitive `meta` fields into Loki labels for dashboard filtering
+// - ADDED: Embeds full `meta` object in the log message (as JSON) for postmortem inspection
+// - RETAINED: Basic auth, verbose logging, and fallback defaults for source/service
 // v1.0.8 gr8r-grafana-worker: compatible with service bindings + retains diagnostics
 //ADDED support for internal Worker-to-Worker calls via service bindings
 //RETAINED route support for direct HTTP POSTs (api.gr8r.com/api/grafana)
@@ -21,13 +25,30 @@ export default {
 
       const timestamp = Date.now() * 1_000_000; // nanoseconds for Loki
 
+      const labels = {
+        level,
+        source,
+        service_name: service,
+      };
+
+      // Flatten top-level primitive fields from meta into labels
+      for (const [key, value] of Object.entries(meta)) {
+        if (key !== "source" && key !== "service") {
+          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            labels[key] = String(value);
+          }
+        }
+      }
+
+      // Embed full structured meta in the message payload for drill-down
+      const messagePayload = {
+        message,
+        ...(Object.keys(meta).length > 0 ? { meta } : {})
+      };
+
       const stream = {
-        stream: {
-          level,
-          source,
-          service_name: service
-        },
-        values: [[`${timestamp}`, message]]
+        stream: labels,
+        values: [[`${timestamp}`, JSON.stringify(messagePayload)]]
       };
 
       const lokiUrl = env.GRAFANA_LOKI_URL;
